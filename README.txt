@@ -15,7 +15,7 @@ The separate Readme files are inside the folders of "theory" and of "simulations
 How to cite?
 If you use the code or ideas from this repository in your research, please refer to the main paper:
 "Combinatorial solutions to condensation, electrorheological and other aggregation kernels"
-by M. Lepek, A. Fronczak & P. Fronczak.
+by M. Lepek, A. Fronczak & P. Fronczak. Publication details will be announced.
 
 Best regards!
 M.L.
