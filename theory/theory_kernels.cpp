@@ -3,8 +3,8 @@ The code for theoretical predictions in the exact combinatorial approach to coag
 Author: Michal Lepek
 Date: 02 Dec 2019
 If using this code for your research, please refer to the main work:
-"Combinatorial solutions to condensation, electrorheological and other aggregation kernels"
-by M. Lepek, A. Fronczak & P. Fronczak.
+"Combinatorial solutions to coagulation kernel for linear chains"
+by M. Lepek, A. Fronczak & P. Fronczak, Physica D: Nonlinear Phenomena, Volume 415, January 2021, 132756
 ******************************************/
 
 /// *********** Useful note:
@@ -159,7 +159,7 @@ int main()
 		/// kernel condensation
 		//ng.at(g-1) = BinomialCoefficient(M,g) * Factorial(3*g) * 2 / ( (g+1) * Factorial(2*g+1) ) * Bell_g_k_specific_xn( M-g, k-1 ) / Bell_g_k_specific_xn( M, k );
 
-		/// kernel electro
+		/// kernel electrorheological (linear-chain)
 		ng.at(g-1) = BinomialCoefficient(M,g) * Factorial(g)*Factorial(g) / ( mpfr::pow( 2, g-1 ) * Factorial(g-1) ) * Bell_g_k_specific_xn( M-g, k-1 ) / Bell_g_k_specific_xn( M, k );
 
 		/// kernel electrorheological alpha=-1
