@@ -21,7 +21,11 @@ g++ theory_kernels.cpp -o theory -lmpfr -lgmp -w -std=c++11 -O2
 
 In the code, there are comments explaining what is going on there.
 
-If you use this code for your research, please cite the main paper: "Combinatorial solutions to condensation, electrorheological and other aggregation kernels" by M. Lepek, A. Fronczak & P. Fronczak.
+If you use this code for your research, please cite the main paper:
+
+"Combinatorial solutions to coagulation kernel for linear chains"
+by M. Lepek, A. Fronczak & P. Fronczak, Physica D: Nonlinear Phenomena, Volume 415, January 2021, 132756.
+https://doi.org/10.1016/j.physd.2020.132756
 
 Best regards!
 M.L.
