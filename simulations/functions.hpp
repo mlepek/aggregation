@@ -3,8 +3,8 @@ The code for the numerical simulations of coagulating systems
 Author: Michal Lepek
 Date: 02 Dec 2019
 If using this code for your research, please refer to the main work:
-"Combinatorial solutions to condensation, electrorheological and other aggregation kernels"
-by M. Lepek, A. Fronczak & P. Fronczak.
+"Combinatorial solutions to coagulation kernel for linear chains"
+by M. Lepek, A. Fronczak & P. Fronczak, Physica D: Nonlinear Phenomena, Volume 415, January 2021, 132756
 ******************************************/
 
 #ifndef FUNCTIONS_HPP
