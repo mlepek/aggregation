@@ -41,15 +41,18 @@ using namespace std;
 
 typedef double (*PointerToKernel)(int,int);
 
-int aggregation(const int N, const int t_max, const int number_of_simulations, const string rule);
+int aggregation(const int N, const int t_max, const int number_of_simulations, const string rule, const int);
 
 int main()
 {
+    // Define initial conditions
+    int initial_conditions = 1; // 1 - monodisperse, 2 - exponential, 3 - power-law
+
     // Define the number of simulations to be averaged.
-    int number_of_simulations = 1000;
+    int number_of_simulations = 100000;
 
     // Define the kernel.
-    string rule = "electrorheological";
+    string rule = "constant_fast";
     /* You can choose several rules listed here:
 
      constant_fast
@@ -82,10 +85,19 @@ int main()
     // using this for loop you can perform several simulations at once, one by one
     for(int i=1; i<=1; i++)
     {
-        int N = 100; // number of monomeric units in the system
-        int t_max = 95; // time of simulation - no more than N; k = N - t_max
+        int N = 1000; // number of monomeric units in the system
+        int t_max = 950; // time of simulation - no more than N; k = N - t_max
 
-        aggregation(N, t_max, number_of_simulations, rule);
+        //aggregation(N, t_max, number_of_simulations, rule, initial_conditions);
+        //rule = "additive_fast";
+        aggregation(N, t_max, number_of_simulations, rule, 1);
+        aggregation(N, t_max, number_of_simulations, rule, 2);
+        aggregation(N, t_max, number_of_simulations, rule, 3);
+        //rule = "product_fast";
+        //aggregation(N, t_max, number_of_simulations, rule, 1);
+        aggregation(N, t_max, number_of_simulations, rule, 2);
+        aggregation(N, t_max, number_of_simulations, rule, 3);
+
     }
 
     return 0;
@@ -135,7 +147,7 @@ inline double antiadditive(int i, int j)
 }
 
 // This function simulates the aggregation process
-int aggregation(const int N, const int t_max, const int number_of_simulations, const string rule)
+int aggregation(const int N, const int t_max, const int number_of_simulations, const string rule, const int initial_conditions)
 {
     clock_t begin = clock();
 
@@ -174,7 +186,7 @@ int aggregation(const int N, const int t_max, const int number_of_simulations, c
     }
 
     // strings for output files
-    string output_file_string = "N=" + to_string(N) + "_t=" + to_string(t_max)
+    string output_file_string = "N=" + to_string(N) + "_t=" + to_string(t_max) + "_ic=" + to_string(initial_conditions) +
                                 + "_s=" + to_string(number_of_simulations) + "_" + rule;
     string output_file_avns_string = output_file_string + "_av_ns.txt";
     string output_file_stddev_string = output_file_string + "_std_dev.txt";
@@ -183,6 +195,9 @@ int aggregation(const int N, const int t_max, const int number_of_simulations, c
 	default_random_engine generator;
 	int maxInt = 2147483647;
 	uniform_int_distribution<int> distribution(0, maxInt);
+
+	// for random seed
+	generator.seed( time(NULL) );
 
 	// container for saving cluster distributions obtained from simulations
 	vector<IVector> container_cluster_distributions;
@@ -196,29 +211,170 @@ int aggregation(const int N, const int t_max, const int number_of_simulations, c
 	for (int simulation = 0; simulation < number_of_simulations; simulation++)
 	{
 
+
         if (simulation % 100 == 0)
 			cout << "N = " << N << ", simulation " << simulation + 1 << ":  " << double(simulation) / number_of_simulations * 100. << " %\t"
                  << "Time elapsed: " << double(clock() - begin) / CLOCKS_PER_SEC << " s" << endl;
 
-		// This vector stores labels (ordinal numbers) of mers (clusters).
-		// Size of this vector decreases in time as the number of mers decreases.
-		IVector labels_of_mers(N);
-		for (int i = 0; i<N; ++i)
-			labels_of_mers[i] = i + 1;
 
-		// This vector contains masses (sizes) of mers. Its length decreases in time.
-		IVector masses_of_mers(N, 1);
+        // This vector stores labels (ordinal numbers) of mers (clusters).
+        // Size of this vector decreases in time as the number of mers decreases.
+        IVector labels_of_mers;
 
-		// This vector contains the information on: which cluster (mer) does this monomer belongs to.
-		// This vector is of constant length.
-		IVector membership_of_monomers(N);
-		for (int i = 0; i<N; ++i)
-			membership_of_monomers[i] = i + 1;
+        // This vector contains masses (sizes) of mers. Its length decreases in time.
+        IVector masses_of_mers;
 
+        // This vector contains the information on: which cluster (mer) does this monomer belongs to.
+        // This vector is of constant length.
+        IVector membership_of_monomers;
+
+        /////////////////////////////////////// initial conditions ////////////////////////////////////////
+
+        if(initial_conditions == 1) // monodisperse initial conditions
+        {
+            // labels from 1 to N
+            labels_of_mers = IVector(N);
+            for (int i = 0; i<N; ++i)
+                labels_of_mers[i] = i + 1;
+
+            // all masses of size 1
+            masses_of_mers = IVector(N, 1);
+
+            // all are distinct clusters
+            membership_of_monomers = IVector(N);
+            for (int i = 0; i<N; ++i)
+                membership_of_monomers[i] = i + 1;
+        }
+        else if(initial_conditions == 2 or initial_conditions == 3 ) // exponential or power-law initial conditions
+        {
+            // let's prepare distribution for random choosing
+
+            valarray<double> values_x(N/100+1);
+            double step = 1./(N/100+1);
+            for(int i=0; i<values_x.size(); i++)
+                values_x[i] = step + step*i;
+
+            double lambda = 15.0; // for exponential initial conditions, 5, 15
+            double alpha = 2.0; // for power-law initial conditions, 1, 2
+
+            valarray<double> values_y;
+
+            // exponential initial conditions
+            if(initial_conditions == 2)
+                values_y = exp( -lambda * values_x ); // <<< exponential function
+            // power-law initial conditions
+            else if(initial_conditions == 3)
+                values_y = pow(values_x, -alpha); // <<< power function
+
+
+            // normalization so the first element shall be 1
+            double a = 1. / values_y[0];
+            values_y = values_y * a;
+
+            //for(int i=0; i<values_y.size(); i++)
+            //    cout << values_y[i] << endl;
+
+            // no we have distribution ready (span_y = 1, span_x = 1)
+
+            int sum_of_masses = 0;
+
+            // now, we have to randomly choose a number of clusters, their sizes from the distribution, the total number of monomers equal to N
+            while(true)
+            {
+                // choosing two random floats from 0 to 1
+                int cluster_size = distribution(generator) % (N/100+1) + 1; // random int from 1 to N/100
+                double random_double = double( distribution(generator) ) / maxInt;
+
+                //cout << random_double << "  " << cluster_size << "  " << values_y[cluster_size] << endl;
+                //getchar();
+
+                // testing the distribution
+                if( random_double < values_y[cluster_size] )
+                    ; // accept
+                else
+                    continue; // reject
+
+                // lets count how many aggregation events (steps) were needed to construct such a configuration
+                int time_steps_needed = 0;
+                for(int i=0; i<masses_of_mers.size(); i++)
+                        time_steps_needed  += ( masses_of_mers.at(i) - 1 );
+                time_steps_needed += (cluster_size-1);
+
+
+                // I have to add mass of this new cluster to know the sum of masses (it must be equal to N).
+                // I must make sure that the sum of masses of clusters will not be greater than N
+                // and that number of steps needed to create such a configuartion will not be greater than lets say N/4.
+                // The latter is important to compare different simulation together.
+                if( (sum_of_masses + cluster_size > N) or (time_steps_needed > N*0.7 ) )
+                    continue;
+                else
+                {
+                    sum_of_masses += cluster_size;
+
+                    // adding new cluster in labels_of_mers
+                    int current_ordinal_number_of_cluster = labels_of_mers.size() + 1;
+                    labels_of_mers.push_back( current_ordinal_number_of_cluster );
+
+                    // adding new cluster in masses_of_mers
+                    masses_of_mers.push_back(cluster_size);
+
+                    // adding new cluster in membership_of_monomers;
+                    for(int i=0; i<cluster_size; i++)
+                        membership_of_monomers.push_back( current_ordinal_number_of_cluster );
+                }
+
+                // if sum of the masses is N then stop, if not then go again and generate
+                if(sum_of_masses == N)
+                    break;
+            } // end of while
+
+            /*cout << "labels_of_mers.size = " << labels_of_mers.size() << endl;
+            cout << "masses_of_mers.size = " << masses_of_mers.size() << endl;
+            cout << "membership_of_monomers.size = " << membership_of_monomers.size() << endl;
+            for(int i=0; i<membership_of_monomers.size(); i++)
+                cout << membership_of_monomers.at(i) << " " ;
+            cout << endl;
+            cout << endl;
+            for(int i=0; i<masses_of_mers.size(); i++)
+                cout << masses_of_mers.at(i) << " " ;
+            cout << endl;*/
+        }
+
+        // test output of initial conditions
+        /*IVector initial_cluster_distribution = histogram(masses_of_mers, N);
+        ofstream test_output("test_output.txt");
+        for(int i=0; i<initial_cluster_distribution.size(); i++)
+            test_output << initial_cluster_distribution.at(i) << endl;
+        test_output.close();
+        getchar();/**/
+
+        /////////////////////////////////////// end of initial conditions ////////////////////////////////////////
+
+
+        // setting preliminary t's value
+        int starting_t_value = 0;
+        switch(initial_conditions)
+        {
+            case 1: starting_t_value = 1;
+                    break;
+
+            case 2: for(int i=0; i<masses_of_mers.size(); i++)
+                        starting_t_value += ( masses_of_mers.at(i) - 1 );
+                    break;
+
+            case 3: for(int i=0; i<masses_of_mers.size(); i++)
+                        starting_t_value += ( masses_of_mers.at(i) - 1 );
+                    break;
+        }
+
+        //cout << "initial conditions " << initial_conditions << endl;
 
 		// This loop performs a single simulation.
-		for (int t = 1; ; t++)
+		for (int t = starting_t_value ; ; t++)
 		{
+
+		    //cout << "t = " << t  << "     labels_of_mers.size = " << labels_of_mers.size() << endl;
+		    //getchar();
 
 			if (t > t_max)
 			{
